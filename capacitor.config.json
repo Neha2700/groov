@@ -1,5 +1,5 @@
 {
   "appId": "com.groov.app",
   "appName": "Groov",
-  "webDir": "www"
+  "webDir": "dist"
 }

@@ -1,19 +1,27 @@
 {
   "name": "groov",
-  "version": "1.0.0",
-  "description": "A from-scratch search UI inspired by the UX *pattern* observed in Spotify's desktop app (static analysis of its bundled `xpui.spa` web UI, v1.3.5.3058). No Spotify code, assets, or API credentials were used — this is original HTML/CSS/JS, backed by the free iTunes Search API for real catalog data.",
-  "main": "config.example.js",
+  "version": "1.27.0",
+  "private": true,
+  "description": "Groov: a private music player for Android and desktop, built on free music APIs.",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "android:sync": "npm run build && cap sync android",
+    "android:apk": "npm run android:sync && cd android && ./gradlew assembleRelease"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "devDependencies": {
+  "license": "UNLICENSED",
+  "dependencies": {
     "@capacitor/android": "^8.5.3",
+    "@capacitor/core": "^8.5.3",
+    "@supabase/supabase-js": "^2.118.0"
+  },
+  "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.3",
-    "@capacitor/core": "^8.5.3"
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12"
   }
 }

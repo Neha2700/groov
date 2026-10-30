@@ -9,3 +9,13 @@ releases/
 
 # OS cruft
 .DS_Store
+
+# Vite
+dist/
+.env.local
+.env.*.local
+
+# Android signing — never commit
+*.jks
+*.keystore
+keystore.properties
