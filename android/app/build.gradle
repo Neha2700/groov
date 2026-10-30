@@ -1,5 +1,20 @@
 apply plugin: 'com.android.application'
 
+
+// versionName comes from package.json; versionCode from CI's run number (or 1
+// locally), so every CI build installs over the previous one.
+def appVersionName = new groovy.json.JsonSlurper().parse(file('../../package.json')).version
+def appVersionCode = (System.getenv('VERSION_CODE') ?: '1').toInteger()
+
+// Release signing: keystore.properties locally, or env vars in CI.
+// Without either, release builds fall back to the debug key.
+def keystorePropsFile = rootProject.file('keystore.properties')
+def keystoreProps = new Properties()
+if (keystorePropsFile.exists()) keystorePropsFile.withInputStream { keystoreProps.load(it) }
+def signingValue = { String prop, String env -> keystoreProps.getProperty(prop) ?: System.getenv(env) }
+def releaseStoreFile = signingValue('storeFile', 'GROOV_KEYSTORE_FILE')
+def hasReleaseSigning = releaseStoreFile && file(releaseStoreFile).exists()
+
 android {
     namespace = "com.groov.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +22,8 @@ android {
         applicationId "com.groov.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersionCode
+        versionName appVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,8 +31,28 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(releaseStoreFile)
+                storePassword signingValue('storePassword', 'GROOV_KEYSTORE_PASSWORD')
+                keyAlias signingValue('keyAlias', 'GROOV_KEY_ALIAS')
+                keyPassword signingValue('keyPassword', 'GROOV_KEY_PASSWORD')
+            }
+        }
+    }
+    compileOptions {
+        // NewPipeExtractor uses newer Java APIs than Android 7 has
+        coreLibraryDesugaringEnabled true
+    }
+    packaging {
+        resources {
+            excludes += ['META-INF/DEPENDENCIES', 'META-INF/LICENSE*', 'META-INF/NOTICE*', 'META-INF/*.kotlin_module']
+        }
+    }
     buildTypes {
         release {
+            signingConfig hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
@@ -35,6 +70,13 @@ dependencies {
     implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    // MediaSessionCompat + MediaStyle notification for background playback
+    implementation "androidx.media:media:1.7.0"
+    // Native full-length playback (phase 3)
+    implementation "androidx.media3:media3-exoplayer:1.5.1"
+    // Same commit NewPipe ships; bump it when YouTube changes break playback
+    implementation "com.github.TeamNewPipe:NewPipeExtractor:e8f89145a830b4d6cae32412007f24ea8b36c73a"
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs_nio:2.1.5"
     implementation project(':capacitor-android')
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"

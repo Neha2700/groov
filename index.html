@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#15082e" />
+    <title>Groov</title>
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="./favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <script>
+      try {
+        if (!localStorage.getItem("groov:auth")) document.documentElement.classList.add("entry");
+      } catch (e) {
+        document.documentElement.classList.add("entry");
+      }
+    </script>
+  </head>
+  <body>
+    <div id="entry-screen" class="entry-screen" role="dialog" aria-label="Sign in to Groov">
+      <form id="entry-form" class="entry-panel" autocomplete="on">
+        <img src="./favicon.svg" alt="" class="entry-logo" />
+        <h1 class="entry-title">Groov</h1>
+        <p class="entry-sub">Groov is private. Sign in with the account Aaditya made for you.</p>
+        <label class="field">
+          <span>Email</span>
+          <input id="entry-email" type="email" required autocomplete="email" inputmode="email" />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input id="entry-password" type="password" required minlength="6" autocomplete="current-password" />
+        </label>
+        <p id="entry-error" class="dialog-error" style="display: none"></p>
+        <button id="entry-submit" type="submit" class="dialog-primary">Sign in</button>
+        <p class="entry-note">No account? Ask Aaditya for one.</p>
+      </form>
+    </div>
+    <div class="bg-blur" id="bg-blur"></div>
+    <div class="bg-gradient"></div>
+
+    <div class="layout" id="layout">
+      <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+      <aside class="sidebar">
+        <a id="broken-banner" class="update-banner broken-banner" href="https://github.com/AADITYA007x/groov/issues" target="_blank" rel="noopener" style="display: none">
+          <span class="update-icon">!</span>
+          <span><b>Full songs need a Groov update</b><br /><small>YouTube changed something. Downloaded songs still play. Tap for status.</small></span>
+        </a>
+        <a id="update-banner" class="update-banner" href="#" target="_blank" rel="noopener" style="display: none">
+          <span class="update-icon">⬆</span>
+          <span><b id="update-version">New version ready</b><br /><small>Tap to download, then open it to install</small></span>
+        </a>
+        <button id="nav-search" class="sidebar-link active">
+          <span class="sidebar-icon">⌕</span> Search
+        </button>
+        <button id="nav-stats" class="sidebar-link">
+          <span class="sidebar-icon">📊</span> Your stats
+        </button>
+
+        <div class="sidebar-header">
+          <span>Your Playlists</span>
+          <button id="create-playlist" class="icon-btn" title="Create playlist" aria-label="Create playlist">+</button>
+        </div>
+        <div id="playlist-nav-list" class="playlist-nav-list"></div>
+
+        <div id="follows-section" style="display: none">
+          <div class="sidebar-header">
+            <span>Artists you follow</span>
+          </div>
+          <div id="follows-list" class="playlist-nav-list"></div>
+        </div>
+
+        <div class="sidebar-header">
+          <span>Theme</span>
+        </div>
+        <div id="theme-swatches" class="theme-swatches"></div>
+
+        <div class="sidebar-header">
+          <span>Account</span>
+        </div>
+        <button id="account-btn" class="sidebar-setting">Sign in to sync playlists</button>
+        <div id="sync-status" class="sidebar-version"></div>
+
+        <div id="friends-section" style="display: none">
+          <div class="sidebar-header">
+            <span>Friends</span>
+          </div>
+          <div id="jam-listeners" class="jam-listeners" style="display: none"></div>
+          <div id="friends-list" class="friends-list"></div>
+        </div>
+
+        <div class="sidebar-header">
+          <span>Settings</span>
+        </div>
+        <button id="youtube-key-btn" class="sidebar-setting"></button>
+        <button id="background-play-btn" class="sidebar-setting" style="display: none"></button>
+        <button id="autoplay-btn" class="sidebar-setting"></button>
+        <button id="favmix-btn" class="sidebar-setting"></button>
+        <button id="eq-btn" class="sidebar-setting" style="display: none"></button>
+        <button id="bass-btn" class="sidebar-setting" style="display: none"></button>
+        <button id="crossfade-btn" class="sidebar-setting" style="display: none"></button>
+        <button id="smart-btn" class="sidebar-setting" style="display: none"></button>
+        <button id="storage-btn" class="sidebar-setting" style="display: none"></button>
+        <button id="help-btn" class="sidebar-setting">❓ Help &amp; setup</button>
+        <div id="app-version" class="sidebar-version"></div>
+      </aside>
+
+      <div class="main-panel">
+        <div class="app">
+          <header class="topbar">
+            <button id="mobile-menu-toggle" class="mobile-menu-toggle" aria-label="Menu">☰</button>
+            <div class="search-pill">
+              <span class="search-icon">⌕</span>
+              <input
+                id="search-input"
+                enterkeyhint="search"
+                type="text"
+                placeholder="What do you want to play?"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button id="clear-input" class="clear-btn" style="display: none">✕</button>
+            </div>
+          </header>
+
+          <main class="content">
+            <section id="recent-view">
+              <div class="quick-actions">
+                <button id="surprise-btn" class="quick-action">🎲 Surprise me</button>
+                <button id="shuffle-library-btn" class="quick-action">🔀 Shuffle my library</button>
+              </div>
+              <div class="section-header">
+                <h2 class="section-title">Recent searches</h2>
+                <button id="clear-recent" class="text-btn" style="display: none">
+                  Clear recent searches
+                </button>
+              </div>
+              <div id="recent-chips" class="chip-row"></div>
+              <p id="recent-empty" class="muted">
+                Search for songs, artists, albums, or playlists — your recent
+                searches will show up here.
+              </p>
+
+              <div id="trending-section" class="category-section" style="display: none">
+                <h2 class="section-title">Trending now</h2>
+                <div id="trending-grid" class="card-grid card-row"></div>
+              </div>
+
+              <div id="made-for-you-section" class="category-section" style="display: none">
+                <h2 class="section-title">Made for you</h2>
+                <div id="made-for-you" class="mix-row"></div>
+              </div>
+
+              <div id="followed-section" class="category-section" style="display: none">
+                <h2 class="section-title">From artists you follow</h2>
+                <div id="followed-grid" class="card-grid card-row"></div>
+              </div>
+
+              <div id="recently-played-section" class="category-section" style="display: none">
+                <h2 class="section-title">Recently played</h2>
+                <div id="recently-played-grid" class="card-grid card-row"></div>
+              </div>
+
+              <div id="recommendations-section" class="category-section" style="display: none">
+                <h2 class="section-title">Recommended for you</h2>
+                <div id="recommendations-container"></div>
+              </div>
+            </section>
+
+            <section id="loading-view" class="loading-state" style="display: none">
+              <div class="spinner"></div>
+            </section>
+
+            <section id="results-view" style="display: none">
+              <div id="top-result"></div>
+              <div id="category-sections"></div>
+              <div id="empty-view" class="empty-state" style="display: none">
+                <p>
+                  No results found for "<span class="query-text"></span>"
+                </p>
+                <p class="muted">
+                  Please make sure your words are spelled correctly, or use
+                  fewer or different keywords.
+                </p>
+              </div>
+            </section>
+
+            <section id="stats-view" class="stats-view" style="display: none"></section>
+
+            <section id="detail-view" style="display: none">
+              <div class="detail-header">
+                <img id="detail-art" class="detail-art" src="" alt="" />
+                <div class="detail-info">
+                  <div id="detail-kind" class="detail-kind">Artist</div>
+                  <h1 id="detail-title" class="detail-title"></h1>
+                  <div id="detail-sub" class="detail-sub"></div>
+                  <div class="detail-actions">
+                    <button id="detail-play" class="detail-play" data-icon="play"><span>Play</span></button>
+                    <button id="detail-radio" class="hero-icon" data-icon="radio"><span>Radio</span></button>
+                    <button id="detail-save" class="hero-icon" style="display: none" data-icon="addTo"><span>Save</span></button>
+                    <button id="detail-follow" class="follow-btn" style="display: none">+ Follow</button>
+                  </div>
+                </div>
+              </div>
+              <div id="detail-body"></div>
+            </section>
+
+            <section id="playlist-view" style="display: none">
+              <div class="playlist-hero">
+                <div id="playlist-cover" class="playlist-cover"></div>
+                <div class="playlist-hero-info">
+                  <div class="detail-kind">Playlist</div>
+                  <h1 id="playlist-view-title" class="playlist-title"></h1>
+                  <div id="playlist-count" class="playlist-count"></div>
+                  <p id="playlist-meta" class="playlist-meta muted" style="display: none"></p>
+                </div>
+              </div>
+              <div class="playlist-actions">
+                <button id="play-playlist-btn" class="hero-play" aria-label="Play" data-icon="play"></button>
+                <button id="shuffle-playlist-btn" class="hero-icon shuffle-toggle" aria-pressed="false" aria-label="Shuffle" title="Shuffle" data-icon="shuffle"></button>
+                <button id="download-playlist-btn" class="hero-icon download-btn" style="display: none" aria-label="Download" title="Download for offline" data-icon="download"><span class="download-label"></span></button>
+                <button id="playlist-more-btn" class="hero-icon" aria-label="More" title="More" data-icon="more"></button>
+                <!-- Reached through ⋯ -->
+                <button id="rename-playlist-btn" hidden>Rename</button>
+                <button id="share-playlist-btn" hidden>Share</button>
+                <button id="delete-playlist-btn" hidden>Delete playlist</button>
+              </div>
+              <div id="playlist-track-list" class="playlist-track-list"></div>
+              <p id="playlist-empty" class="muted" style="display: none">
+                This playlist is empty. Search for songs and use "Add to
+                playlist" to fill it up.
+              </p>
+            </section>
+          </main>
+        </div>
+      </div>
+    </div>
+
+    <div id="add-to-playlist-popover" class="popover" style="display: none"></div>
+
+    <footer id="player-bar" class="player-bar" style="display: none">
+      <div class="player-mini-progress" aria-hidden="true"><div id="player-mini-fill"></div></div>
+      <button id="player-open" class="player-track" aria-label="Open Now Playing">
+        <img id="player-art" class="player-art" src="" alt="" />
+        <span class="player-meta">
+          <span id="player-name" class="player-name"></span>
+          <span id="player-artist" class="player-subtitle"></span>
+        </span>
+      </button>
+      <div class="player-controls">
+        <div class="player-buttons">
+          <button id="player-shuffle" class="player-icon-btn wide-only" aria-label="Shuffle" data-icon="shuffle"></button>
+          <button id="player-prev" class="player-icon-btn player-prev" aria-label="Previous" data-icon="prev"></button>
+          <button id="player-toggle" class="player-play-btn" aria-label="Play" data-icon="play"></button>
+          <button id="player-next" class="player-icon-btn" aria-label="Next" data-icon="next"></button>
+          <button id="player-repeat" class="player-icon-btn wide-only" aria-label="Repeat" data-icon="repeat"></button>
+        </div>
+        <div class="player-progress wide-only">
+          <span id="player-time-elapsed" class="player-time">0:00</span>
+          <div id="player-seek" class="seekbar" role="slider" aria-label="Seek" tabindex="0">
+            <div class="seekbar-rail"><div class="seekbar-fill"></div></div>
+            <div class="seekbar-thumb"></div>
+          </div>
+          <span id="player-time-total" class="player-time">0:00</span>
+        </div>
+      </div>
+      <div class="player-side">
+        <button id="player-like" class="player-icon-btn player-like" aria-label="Like" data-icon="heart"></button>
+        <button id="lyrics-toggle-btn" class="player-icon-btn wide-only" aria-label="Lyrics" title="Lyrics" data-icon="lyrics"></button>
+        <button id="player-queue" class="player-icon-btn wide-only" aria-label="Up next" title="Up next" data-icon="queue"></button>
+      </div>
+    </footer>
+
+    <div id="now-playing" class="now-playing" style="display: none" aria-label="Now playing">
+      <div id="np-bg" class="np-bg"></div>
+      <div class="np-inner">
+        <header class="np-top">
+          <button id="np-close" class="np-icon-btn" aria-label="Close" data-icon="down"></button>
+          <div class="np-label">Now playing</div>
+          <button id="np-video" class="np-icon-btn np-video-btn" aria-label="Show video" title="Show video" data-icon="video"></button>
+        </header>
+        <div id="np-jam" class="np-jam" style="display: none">
+          <span id="np-jam-text"></span>
+          <button id="np-jam-leave" class="np-jam-leave">Leave</button>
+        </div>
+        <div id="np-art-slot" class="np-art-slot">
+          <img id="np-art" class="np-art" src="" alt="" />
+        </div>
+        <div class="np-meta-row">
+          <div class="np-meta">
+            <div id="np-title" class="np-title"></div>
+            <div id="np-artist" class="np-artist"></div>
+          </div>
+          <button id="np-like" class="np-like" aria-label="Like" data-icon="heart"></button>
+        </div>
+        <div class="np-progress">
+          <div id="np-seek" class="seekbar seekbar-lg" role="slider" aria-label="Seek" tabindex="0">
+            <div class="seekbar-rail"><div class="seekbar-fill"></div></div>
+            <div class="seekbar-thumb"></div>
+          </div>
+          <div class="np-times"><span id="np-elapsed">0:00</span><span id="np-total">0:00</span></div>
+        </div>
+        <div class="np-controls">
+          <button id="np-shuffle" class="np-mode" aria-label="Shuffle" title="Shuffle" data-icon="shuffle"></button>
+          <button id="np-prev" class="np-skip" aria-label="Previous" data-icon="prev"></button>
+          <button id="np-toggle" class="np-play" aria-label="Play" data-icon="play"></button>
+          <button id="np-next" class="np-skip" aria-label="Next" data-icon="next"></button>
+          <button id="np-repeat" class="np-mode" aria-label="Repeat" title="Repeat" data-icon="repeat"></button>
+        </div>
+        <div class="np-extra">
+          <button id="np-lyrics" class="np-action" data-icon="lyrics"><span>Lyrics</span></button>
+          <button id="np-add" class="np-action" data-icon="addTo"><span>Save</span></button>
+          <button id="np-radio" class="np-action" data-icon="radio"><span>Radio</span></button>
+          <button id="np-queue" class="np-action" data-icon="queue"><span>Up next</span></button>
+          <button id="np-sleep" class="np-action" data-icon="moon"><span class="np-sleep-label">Sleep</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- The one YouTube player. Invisible unless "Show video" is on; CSS
+         positions it, the DOM never moves (that would restart the song). -->
+    <div id="yt-host" class="yt-host"><div id="youtube-player"></div></div>
+
+    <div id="queue-sheet" class="queue-sheet" style="display: none">
+      <div class="queue-panel">
+        <div class="queue-header">
+          <h2>Up next</h2>
+          <button id="queue-close" class="video-collapse-btn queue-close" aria-label="Close">⌄</button>
+        </div>
+        <div class="queue-from">
+          <div>
+            <div class="queue-from-label">Playing from</div>
+            <div id="queue-now" class="queue-from-name"></div>
+          </div>
+          <button id="queue-save" class="queue-save">＋ Save</button>
+        </div>
+        <div id="queue-list" class="queue-list"></div>
+      </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <div id="account-dialog" class="dialog-backdrop" style="display: none">
+      <form id="account-form" class="dialog" autocomplete="on">
+        <h2 id="account-title" class="dialog-title">Sign in</h2>
+        <p class="dialog-sub muted">Sync your playlists across devices and share them.</p>
+        <label id="account-name-row" class="field" style="display: none">
+          <span>Your name</span>
+          <input id="account-name" type="text" maxlength="40" autocomplete="nickname" placeholder="e.g. Aaditya" />
+        </label>
+        <label class="field">
+          <span>Email</span>
+          <input id="account-email" type="email" required autocomplete="email" inputmode="email" />
+        </label>
+        <label class="field">
+          <span>Password</span>
+          <input id="account-password" type="password" required minlength="6" autocomplete="current-password" />
+        </label>
+        <p id="account-error" class="dialog-error" style="display: none"></p>
+        <button id="account-submit" type="submit" class="dialog-primary">Sign in</button>
+        <button id="account-switch" type="button" class="text-btn dialog-switch" hidden>New here? Create an account</button>
+        <button id="account-cancel" type="button" class="dialog-close" aria-label="Close">✕</button>
+      </form>
+    </div>
+
+    <div id="lyrics-overlay" class="lyrics-overlay" style="display: none">
+      <div class="lyrics-panel">
+        <button id="lyrics-close" class="video-collapse-btn" aria-label="Close lyrics">⌄</button>
+        <div class="lyrics-header">
+          <div id="lyrics-track-name" class="video-overlay-name"></div>
+          <div id="lyrics-track-artist" class="video-overlay-artist"></div>
+        </div>
+        <div id="lyrics-body" class="lyrics-body"></div>
+        <div id="lyrics-timing" class="lyrics-timing" style="display: none">
+          <button id="lyrics-earlier" class="np-pill lyrics-nudge" aria-label="Lyrics earlier by half a second">−0.5s</button>
+          <button id="lyrics-timing-value" class="lyrics-timing-value" title="Reset">Tap the line being sung</button>
+          <button id="lyrics-later" class="np-pill lyrics-nudge" aria-label="Lyrics later by half a second">+0.5s</button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -1,144 +1,113 @@
 # Groov
 
-A from-scratch music search and player app, inspired by the UX *pattern*
-observed in Spotify's desktop app (static analysis of its bundled
-`xpui.spa` web UI, v1.3.5.3058). No Spotify code, assets, or API
-credentials were used — this is original HTML/CSS/JS, backed by the free
-iTunes Search API for real catalog data.
+A private Spotify-style music player for Android and laptop, built only on free
+music APIs. Search, full-length playback, synced lyrics, playlists and themes.
 
-## What was observed (evidence, not implementation)
+> **Showcase copy.** Groov was started by **Neha Sah** — the original idea, design
+> and first version. **Aaditya Sah** ([AADITYA007x](https://github.com/AADITYA007x))
+> grew it into the full app shown here. The live app is built and released from
+> [AADITYA007x/groov](https://github.com/AADITYA007x/groov); this copy is for
+> reading and doesn't build or publish anything.
 
-- Two-tier search: a broad overview query returning a "top result" plus a
-  handful of items per category, then a separate per-category query when the
-  user drills into "See all".
-- Categories: songs, artists, albums, playlists (Spotify's real app also
-  covers podcasts, episodes, audiobooks, genres — trimmed here to what the
-  iTunes Search API exposes: songs, artists, albums).
-- Recent searches persisted locally, shown when the input is empty
-  (`.length < 1` guard), with a "clear recent searches" action.
-- An empty-results state with a "check your spelling" hint.
+## Features
 
-Exact debounce timing wasn't recoverable from static strings (the utility
-lives in a shared vendor chunk); this implementation uses the common 300ms
-default.
+- Search songs, artists and albums (iTunes catalog), with a top result and "See all"
+- Full-length songs through the YouTube player when a YouTube key is set; 30s previews otherwise
+- Synced, auto-scrolling lyrics (lrclib.net)
+- Playlists, recent searches, autoplay through the current list
+- Trending chart and "Recommended for you" from your playlists
+- Four colour themes
+- Android APK built automatically by GitHub Actions; web version on GitHub Pages
 
-**Recommendations** were also analyzed, with a different outcome: route
-chunks (`xpui-routes-taste-profile.js`, artist-page "fans also like" error
-keys, `*-more-like-this.js`) confirm the *surfaces* exist, but unlike search
-there's no client-side persisted-query logic to inspect — recommendation
-ranking is computed server-side by Spotify's ML systems (collaborative
-filtering, audio analysis, NLP on playlists), so there's no algorithm for
-client code, or this project, to extract. What's replicated below is the UX
-pattern, not the ranking model.
+See [the roadmap](#roadmap) for what's coming.
 
-## What was built
+## Install on a phone
 
-- [index.html](index.html) / [style.css](style.css) / [script.js](script.js) / [data.js](data.js) / [config.js](config.js)
-- Debounced search-as-you-type (`DEBOUNCE_MS = 300`) against the live
-  [iTunes Search API](https://developer.apple.com/library/archive/documentation/AudioVideo/Conceptual/iTuneSearchAPI/) — free, CORS-open, no key required.
-- Scored "top result" (exact > prefix > substring match) across songs,
-  artists, and albums.
-- Per-category sections with expand/collapse ("See all" fetches a fresh,
-  larger result set rather than just revealing cached items).
-- Recent searches in `localStorage`, click-to-search, clear-all.
-- Empty state and a network-error fallback.
-- Stale-request cancellation via `AbortController` so a slow response can't
-  clobber a newer search.
+1. Open the repo's **Releases** page on the phone and download the latest `groov-…apk`.
+   (Builds from the `dev` branch are under **Actions → Build Android APK → latest run → Artifacts**.)
+2. Open the file and allow "Install unknown apps" for your browser or file manager when asked.
+3. Updates install over the old version, and your playlists stay.
 
-## Trending now
+### Full-length songs
 
-Live Apple Music/iTunes top-songs chart — `itunes.apple.com/us/rss/topsongs/...`,
-the same free, CORS-open, no-key host as search. Shown on the Home view
-(empty search box), above Recommended. No setup needed.
+Open the sidebar → **Settings → YouTube** and paste a free
+[YouTube Data API v3](https://console.cloud.google.com/) key.
+Each person should use their own key: one key allows about 100 new song lookups a day,
+and songs you've played before don't count again.
 
-## Recommended for you
+To get a key: Google Cloud Console → create a project → **APIs & Services → Library** →
+enable "YouTube Data API v3" → **Credentials → Create credentials → API key**.
 
-A heuristic "More like this," not Spotify's actual ranking (see above) — built
-from signals already on hand instead of a new API:
+## Accounts and sync (Supabase)
 
-- **"More by \<artist\>"**: the artist(s) with the most tracks across all your
-  playlists, expanded via `itunes.apple.com/lookup?id=<artistId>&entity=song`.
-- **"Because you like \<Genre\>"**: your most common playlisted genre
-  (iTunes' `primaryGenreName`), fed back into a regular search.
-- Tracks already in a playlist are filtered out of their own recommendations.
-- Empty until you've added at least one song to a playlist — there's no
-  signal to recommend from before that.
+Sign-in, synced playlists, shared playlists and play history use a free
+[Supabase](https://supabase.com) project. The URL and publishable key are in
+`src/cloud/client.ts` (they're meant to ship in apps); access is enforced by
+row-level security in [`supabase/schema.sql`](supabase/schema.sql). Run that
+file once in Supabase's SQL Editor to set up a new project.
 
-## Playlists
+## Develop
 
-A left sidebar (Spotify's "Your Library" pattern) holds user-created
-playlists, stored in `localStorage` as full track snapshots — not just ids —
-so a playlist stays playable after a reload even if that track isn't in a
-live search anymore.
-
-- **Create**: the `+` next to "Your Playlists" in the sidebar, or the
-  "Create new playlist" field inside the add-to-playlist popover.
-- **Add**: hover any song card (or the top result) and click the `+` overlay
-  button; a popover lists your playlists (✓ if the track's already in one)
-  plus a quick-create field.
-- **View / play / remove**: click a playlist in the sidebar for a row list
-  with per-track play buttons (same playback engine as search results —
-  full-length via YouTube if configured, 30s preview otherwise) and a remove
-  (✕) button.
-- **Delete**: "Delete playlist" at the top of the playlist view.
-
-Navigating between Search and a playlist never interrupts playback — the
-player bar keeps running in the background regardless of which view is open.
-
-## Playback
-
-Hover a song card (or the top result, if it's a song) to reveal a play
-button. Two engines, picked automatically per track:
-
-1. **iTunes 30s preview** (default, always available) — zero setup, no
-   account, no API key. This is what you get out of the box.
-2. **Full-length via YouTube** — used automatically once you add a free
-   YouTube Data API v3 key to `config.js`. Falls back to the 30s preview on
-   any lookup failure (no key, quota exhausted, no matching video, network
-   error), so the app degrades gracefully either way.
-
-### Enabling full-length playback
-
-1. Go to [console.cloud.google.com](https://console.cloud.google.com/) and
-   sign in.
-2. Create a new project (any name).
-3. **APIs & Services → Library** → search "YouTube Data API v3" → **Enable**.
-4. **APIs & Services → Credentials → Create Credentials → API key**.
-5. Copy the key into `config.js`:
-   ```js
-   const YOUTUBE_API_KEY = "paste-your-key-here";
-   ```
-
-The free tier is 10,000 units/day; each search costs 100 units (~100
-searches/day). Found video IDs are cached in `localStorage` so repeat
-searches for the same track don't re-spend quota. `config.js` is
-git-ignored — copy `config.example.js` if you need a fresh template, and
-never commit a real key to a public repo.
-
-Playback itself (once a video ID is known) uses the YouTube IFrame Player
-API, which needs no key and is free — only the *search* to find the video
-costs quota.
-
-## Run it
-
-1. Clone the repo.
-2. `cp www/config.example.js www/config.js` — optional, only needed for
-   full-length YouTube playback (see above); the app runs fine without it,
-   using 30s previews.
-3. Serve the `www/` folder:
-   ```bash
-   python3 -m http.server 4173 --directory www
-   ```
-   then open http://localhost:4173.
-
-### Building the Android app
+Needs [Node.js 22+](https://nodejs.org/).
 
 ```bash
 npm install
-npx cap sync android
-cd android && ./gradlew assembleDebug
+npm run dev        # http://localhost:4173 — reloads as you edit
+npm run build      # type-check + production build into dist/
 ```
-The debug APK lands at
-`android/app/build/outputs/apk/debug/app-debug.apk` — install it on a
-device/emulator, or open the `android/` folder in Android Studio and run
-from there.
+
+Optional: copy `.env.example` to `.env.local` and set `VITE_YOUTUBE_API_KEY` to bake a key into
+local builds. Never put a real key in CI or commit it, because anyone who downloads the APK can read it.
+
+### Project layout
+
+```
+index.html            app shell (Vite entry)
+src/
+  main.ts             wires everything up
+  config.ts           constants, storage keys, YouTube key handling
+  state.ts            track registry + app-wide event bus
+  api/                iTunes, YouTube and lrclib clients
+  player/             playback engines, queue, lyrics overlay
+  library/            playlists (localStorage)
+  ui/                 search, home feed, cards, views, popover, theme, settings
+  style.css
+android/              Capacitor Android project
+.github/workflows/    APK build + GitHub Pages deploy
+```
+
+### Building the APK
+
+GitHub Actions builds a signed APK on every push to `main` or `dev`
+(`.github/workflows/android.yml`). It needs two repository secrets:
+
+| Secret | Value |
+| --- | --- |
+| `GROOV_KEYSTORE_BASE64` | the release keystore, base64-encoded |
+| `GROOV_KEYSTORE_PASSWORD` | its password (alias `groov`) |
+
+Without them the build still works, but it's signed with a throwaway key and won't install over earlier builds.
+
+To build locally instead, you need JDK 21 and the Android SDK (Android Studio is optional):
+
+```bash
+npm run android:apk
+# → android/app/build/outputs/apk/release/app-release.apk
+```
+
+For local release signing, create `android/keystore.properties` (git-ignored):
+
+```properties
+storeFile=/absolute/path/to/groov-release.jks
+storePassword=…
+keyAlias=groov
+keyPassword=…
+```
+
+## Roadmap
+
+1. ~~Proper project: Vite + TypeScript, CI-built signed APK~~
+2. ~~Spotify-style playback: background and screen-off play, lock-screen and notification controls, media keys~~
+3. ~~Full songs from YouTube audio streams with no search quota, plus offline downloads~~
+4. ~~For the two of us: login, synced and shared playlists, listen together~~
+5. Discovery and polish: Last.fm recommendations, Deezer charts, artist pages, stats, crossfade
